@@ -5,7 +5,7 @@
 在终端输入
 
 ```bash
-java -Dfile.encoding=utf-8 ncmdump.jar a.ncm b.ncm
+java -Dfile.encoding=utf-8 -jar ncmdump.jar a.ncm b.ncm
 ```
 
 其中a.ncm和b.ncm是要转换的文件  
