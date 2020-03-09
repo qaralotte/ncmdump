@@ -58,5 +58,6 @@ public class Utils {
         fos.write(data);
         System.out.println("write music file successfully");
         fos.flush();
+        fos.close();
     }
 }

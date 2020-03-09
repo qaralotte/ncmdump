@@ -1,5 +1,14 @@
 package io.qaralotte.ncmdump;
 
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.flac.FlacFileReader;
+import org.jaudiotagger.audio.mp3.MP3FileReader;
+import org.jaudiotagger.tag.FieldKey;
+import org.jaudiotagger.tag.Tag;
+import org.jaudiotagger.tag.flac.FlacTag;
+import org.jaudiotagger.tag.id3.ID3v22Tag;
+import org.jaudiotagger.tag.images.StandardArtwork;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.ByteBuffer;
@@ -25,15 +34,51 @@ public class Dump {
         byte[] sbox = build_sbox();
         byte[] meta_data = read_meta_data();
         int crc32 = read_crc32();
+        System.out.println("  crc32: " + crc32);
         byte[] album_image = read_album_image();
         byte[] music_data = read_music_data(sbox);
 
         MetaData meta = MetaData.read_from_json(meta_data);
         File output_music = new File(ncm_f.getParent(), meta.musicName + "." + meta.format);
         Utils.write(output_music, music_data);
-        //TODO add id3 tag;
+
+        AudioFile audio_file;
+        if (meta.format.equals("flac")) {
+            FlacFileReader flac_reader = new FlacFileReader();
+            audio_file = flac_reader.read(output_music);
+            FlacTag flac_tag = (FlacTag) audio_file.getTag();
+            fix_tag(audio_file, meta, album_image, flac_tag);
+        } else if (meta.format.equals("mp3")) {
+            MP3FileReader mp3_reader = new MP3FileReader();
+            audio_file = mp3_reader.read(output_music);
+            ID3v22Tag id3_tag = (ID3v22Tag) audio_file.getTag();
+            fix_tag(audio_file, meta, album_image, id3_tag);
+        } else {
+            throw new Exception("UNSUPPORT FORMAT!");
+        }
+
         System.out.println("done!");
         System.out.println("output file path: " + output_music.getAbsolutePath());
+        ncm_fis.close();
+    }
+
+    public void fix_tag(AudioFile audio, MetaData meta_data, byte[] cover, Tag tag) throws Exception {
+        tag.deleteArtworkField();
+        tag.setField(FieldKey.TITLE, meta_data.musicName);
+        for (int i = 0; i < meta_data.artist.length; ++i) {
+            tag.addField(FieldKey.ARTIST, meta_data.artist[i][0]);
+        }
+        tag.setField(FieldKey.ALBUM, meta_data.album);
+
+        StandardArtwork artwork = new StandardArtwork();
+        artwork.setBinaryData(cover);
+        artwork.setMimeType("image/jpeg");
+        artwork.setPictureType(3);
+
+        tag.setField(artwork);
+        audio.setTag(tag);
+        audio.commit();
+        System.out.println("fix tag successfully");
     }
 
     private boolean assert_magic() throws Exception {
