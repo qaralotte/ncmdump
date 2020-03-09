@@ -5,8 +5,7 @@
 在终端输入
 
 ```bash
-javac -d Executor.java
-java io.qaralotte.ncmdump.Executor a.ncm b.ncm
+java -Dfile.encoding=utf-8 ncmdump.jar a.ncm b.ncm
 ```
 
 其中a.ncm和b.ncm是要转换的文件  
@@ -14,7 +13,8 @@ java io.qaralotte.ncmdump.Executor a.ncm b.ncm
 
 * #### 所需的工具库
 
-因为java本身没有处理json的类，所以我用了[google/gson](https://github.com/google/gson)
+处理json所需的库: [google/gson](https://github.com/google/gson)   
+处理音频元信息所需的库: [ijabz/jaudiotagger](https://bitbucket.org/ijabz/jaudiotagger/src/master/)
 
 * #### 参考
 
