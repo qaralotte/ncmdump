@@ -13,15 +13,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class Dump {
 
     private File ncm_f;
     private FileInputStream ncm_fis;
-    private static final String MAGIC = "CTENFDAM";
+    private static final byte[] MAGIC = { 0x43, 0x54, 0x45, 0x4E, 0x46, 0x44, 0x41, 0x4D };
     private static final byte[] CORE_KEY = { 0x68, 0x7A, 0x48, 0x52, 0x41, 0x6D, 0x73, 0x6F, 0x35, 0x6B, 0x49, 0x6E, 0x62, 0x61, 0x78, 0x57 };
     private static final byte[] META_KEY = { 0x23, 0x31, 0x34, 0x6C, 0x6A, 0x6B, 0x5F, 0x21, 0x5C, 0x5D, 0x26, 0x30, 0x55, 0x3C, 0x27, 0x28 };
+    private String netease_key;
 
     public Dump(File f) throws Exception {
         this.ncm_f = f;
@@ -39,7 +41,12 @@ public class Dump {
         byte[] music_data = read_music_data(sbox);
 
         MetaData meta = MetaData.read_from_json(meta_data);
-        File output_music = new File(ncm_f.getParent(), meta.musicName + "." + meta.format);
+        StringBuilder artists = new StringBuilder();
+        for (int _index = 0; _index < meta.artist.length; ++_index) {
+            if (_index != 0) artists.append(", ");
+            artists.append(meta.artist[_index][0]);
+        }
+        File output_music = new File(ncm_f.getParent(), artists.toString() + " - " + meta.musicName + "." + meta.format);
         Utils.write(output_music, music_data);
 
         AudioFile audio_file;
@@ -69,6 +76,7 @@ public class Dump {
             tag.addField(FieldKey.ARTIST, meta_data.artist[i][0]);
         }
         tag.setField(FieldKey.ALBUM, meta_data.album);
+        tag.setField(FieldKey.COMMENT, netease_key);
 
         StandardArtwork artwork = new StandardArtwork();
         artwork.setBinaryData(cover);
@@ -85,7 +93,7 @@ public class Dump {
         byte[] ncm_magic = new byte[8];
         Utils.read(ncm_fis, ncm_magic);
         Utils.skip(ncm_fis, 2L);
-        return Arrays.equals(ncm_magic, MAGIC.getBytes());
+        return Arrays.equals(ncm_magic, MAGIC);
     }
 
     private byte[] build_sbox() throws Exception {
@@ -95,7 +103,7 @@ public class Dump {
         for (int i = 0; i < key_data.length; ++i) key_data[i] ^= 0x64;
         System.out.println("read key data successfully");
         byte[] decrypt_data_row = Utils.aes_ecb_decrypt(key_data, CORE_KEY);
-        byte[] decrypt_data = Arrays.copyOfRange(decrypt_data_row, 17, decrypt_data_row.length);
+        byte[] decrypt_data = Arrays.copyOfRange(decrypt_data_row, 17, decrypt_data_row.length); //"neteasecloudmusic"
         System.out.println("aes ecb decrypt successfully");
         byte[] sbox = Utils.rc4_ksa_build(decrypt_data);
         System.out.println("rc4 ksa build sbox successfully");
@@ -113,12 +121,14 @@ public class Dump {
         byte[] meta_data_r = new byte[meta_data_length];
         Utils.read(ncm_fis, meta_data_r);
         for (int i = 0; i < meta_data_r.length; ++i) meta_data_r[i] ^= 0x63;
-        byte[] meta_data_b64_aes = Arrays.copyOfRange(meta_data_r, 22, meta_data_r.length);
+        netease_key = new String(meta_data_r, StandardCharsets.UTF_8);
+        byte[] meta_data_b64_aes = Arrays.copyOfRange(meta_data_r, 22, meta_data_r.length); //"163 key(don't modify)"
+        System.out.println("  " + "163 key: " + new String(meta_data_b64_aes, StandardCharsets.UTF_8));
         byte[] meta_data = Utils.aes_ecb_decrypt(Utils.base64_decrypt(meta_data_b64_aes), META_KEY);
         System.out.println("read meta data successfully");
         System.out.println("meta data: ");
-        System.out.println("  " + new String(meta_data));
-        return Arrays.copyOfRange(meta_data, 6, meta_data.length);
+        System.out.println("  " + new String(meta_data, StandardCharsets.UTF_8));
+        return Arrays.copyOfRange(meta_data, 6, meta_data.length); //"music:"
     }
 
     private int read_crc32() throws Exception {
