@@ -5,11 +5,11 @@
 在终端输入
 
 ```bash
-java -Dfile.encoding=utf-8 -jar ncmdump.jar a.ncm b.ncm
+java -jar ncmdump.jar a.ncm b.ncm
 ```
 
 其中a.ncm和b.ncm是要转换的文件  
-输出文件的路径是和输入的一样
+文件输出的路径同输入的路径
 
 * #### 所需的工具库
 
@@ -20,4 +20,4 @@ java -Dfile.encoding=utf-8 -jar ncmdump.jar a.ncm b.ncm
 
 [**liwenbo-gh/ncmdump**](https://github.com/liwenbo-gh/ncmdump) - 我参考的同样用java实现的ncmdump  
 [**anonymous5l/ncmdump**](https://github.com/anonymous5l/ncmdump) - 原版ncmdump  
-[**(简书)网易云音乐ncm编解码探究记录**](https://www.jianshu.com/p/ec5977ef383a) - ncmdump文件解析
+[**(简书)网易云音乐ncm编解码探究记录**](https://www.jianshu.com/p/ec5977ef383a) - ncmdump文件解析   
