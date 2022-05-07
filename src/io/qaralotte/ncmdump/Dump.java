@@ -58,7 +58,7 @@ public class Dump {
         } else if (meta.format.equals("mp3")) {
             MP3FileReader mp3_reader = new MP3FileReader();
             audio_file = mp3_reader.read(output_music);
-            ID3v22Tag id3_tag = (ID3v22Tag) audio_file.getTag();
+            Tag id3_tag = audio_file.getTag();
             fix_tag(audio_file, meta, album_image, id3_tag);
         } else {
             throw new Exception("UNSUPPORT FORMAT!");
